@@ -1,0 +1,3 @@
+Initial release.
+
+Open the app, write quickly, and save the memo to a Google Calendar event named memo.
