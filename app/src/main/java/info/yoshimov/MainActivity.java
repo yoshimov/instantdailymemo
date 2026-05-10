@@ -86,7 +86,7 @@ public class MainActivity extends Activity {
         if (hasCalendarPermission()) {
             loadMemo();
         } else {
-            statusText.setText("カレンダー権限が必要です");
+            statusText.setText(R.string.calendar_permission_required);
             requestPermissions(new String[]{
                     Manifest.permission.READ_CALENDAR,
                     Manifest.permission.WRITE_CALENDAR
@@ -148,7 +148,7 @@ public class MainActivity extends Activity {
         if (requestCode == REQ_CALENDAR && hasCalendarPermission()) {
             loadMemo();
         } else {
-            statusText.setText("権限を許可すると Google Calendar に保存できます");
+            statusText.setText(R.string.calendar_permission_hint);
         }
     }
 
@@ -179,7 +179,7 @@ public class MainActivity extends Activity {
         menuButton = new Button(this);
         menuButton.setText("⋮");
         menuButton.setTextSize(22);
-        menuButton.setContentDescription("設定");
+        menuButton.setContentDescription(getString(R.string.settings));
         menuButton.setOnClickListener(v -> startActivity(new Intent(this, SettingsActivity.class)));
         header.addView(menuButton, new LinearLayout.LayoutParams(
                 dp(48),
@@ -190,7 +190,7 @@ public class MainActivity extends Activity {
                 LinearLayout.LayoutParams.WRAP_CONTENT));
 
         statusText = new TextView(this);
-        statusText.setText("読み込み中...");
+        statusText.setText(R.string.loading);
         statusText.setTextColor(Color.rgb(107, 114, 128));
         statusText.setTextSize(12);
         LinearLayout.LayoutParams statusParams = new LinearLayout.LayoutParams(
@@ -200,7 +200,7 @@ public class MainActivity extends Activity {
         rootLayout.addView(statusText, statusParams);
 
         memoEdit = new EditText(this);
-        memoEdit.setHint("今日の日記");
+        memoEdit.setHint(R.string.today_diary_hint);
         memoEdit.setTextSize(18);
         memoEdit.setGravity(Gravity.TOP | Gravity.START);
         memoEdit.setSingleLine(false);
@@ -230,7 +230,7 @@ public class MainActivity extends Activity {
             @Override public void onTextChanged(CharSequence s, int start, int before, int count) {
                 if (!loadingText) {
                     dirty = true;
-                    statusText.setText("未保存");
+                    statusText.setText(R.string.unsaved);
                     handler.removeCallbacks(autosave);
                     handler.postDelayed(autosave, 900);
                     memoEdit.post(MainActivity.this::updateScrollThumb);
@@ -276,7 +276,7 @@ public class MainActivity extends Activity {
         buttons.setPadding(0, dp(8), 0, 0);
 
         saveButton = new Button(this);
-        saveButton.setText("保存");
+        saveButton.setText(R.string.save);
         saveButton.setOnClickListener(v -> saveMemo(true, false, true));
         buttons.addView(saveButton, new LinearLayout.LayoutParams(
                 0,
@@ -284,7 +284,7 @@ public class MainActivity extends Activity {
                 1f));
 
         closeButton = new Button(this);
-        closeButton.setText("終了");
+        closeButton.setText(R.string.close);
         closeButton.setOnClickListener(v -> saveMemo(false, true, true));
         LinearLayout.LayoutParams closeParams = new LinearLayout.LayoutParams(
                 0,
@@ -350,17 +350,17 @@ public class MainActivity extends Activity {
      * Loads today's memo event from Google calendars and displays its description.
      */
     private void loadMemo() {
-        statusText.setText("読み込み中...");
+        statusText.setText(R.string.loading);
         new AsyncTask<Void, Void, MemoRecord>() {
             @Override protected MemoRecord doInBackground(Void... voids) {
                 List<Long> calendarIds = findGoogleCalendarIds();
                 if (calendarIds.isEmpty()) {
-                    return new MemoRecord(-1L, -1L, null, "Google Calendar が見つかりません");
+                    return new MemoRecord(-1L, -1L, null, getString(R.string.google_calendar_not_found));
                 }
                 calendarIds = prioritizeSelectedCalendar(calendarIds);
                 MemoRecord record = findTodayMemo(calendarIds);
                 if (record == null) {
-                    return new MemoRecord(-1L, calendarIds.get(0), "", "新規メモ");
+                    return new MemoRecord(-1L, calendarIds.get(0), "", getString(R.string.new_memo));
                 }
                 return record;
             }
@@ -369,7 +369,7 @@ public class MainActivity extends Activity {
                 loadedEventId = record.eventId;
                 loadedCalendarId = record.calendarId;
                 if (dirty) {
-                    statusText.setText("編集中");
+                    statusText.setText(R.string.editing);
                     handler.removeCallbacks(autosave);
                     handler.postDelayed(autosave, 900);
                     return;
@@ -457,7 +457,7 @@ public class MainActivity extends Activity {
         try {
             startActivity(intent);
         } catch (ActivityNotFoundException e) {
-            Toast.makeText(this, "カレンダーアプリが見つかりません", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, R.string.calendar_app_not_found, Toast.LENGTH_SHORT).show();
         }
     }
 
@@ -549,7 +549,7 @@ public class MainActivity extends Activity {
                             cursor.getLong(0),
                             calendarId,
                             cursor.getString(2),
-                            "読み込み済み");
+                            getString(R.string.loaded));
                     }
                 }
             }
@@ -578,13 +578,13 @@ public class MainActivity extends Activity {
             if (finishAfterSave) {
                 finish();
             } else if (showToast) {
-                Toast.makeText(MainActivity.this, "保存済みです", Toast.LENGTH_SHORT).show();
+                Toast.makeText(MainActivity.this, R.string.already_saved, Toast.LENGTH_SHORT).show();
             }
             return;
         }
         final String text = memoEdit.getText().toString();
         dirty = false;
-        statusText.setText("保存中...");
+        statusText.setText(R.string.saving);
         new AsyncTask<Void, Void, Boolean>() {
             @Override protected Boolean doInBackground(Void... voids) {
                 if (loadedEventId >= 0) {
@@ -612,10 +612,10 @@ public class MainActivity extends Activity {
             }
 
             @Override protected void onPostExecute(Boolean ok) {
-                statusText.setText(ok ? "保存済み" : "保存に失敗しました");
+                statusText.setText(ok ? R.string.saved : R.string.save_failed);
                 dirty = !ok;
                 if (showToast && ok) {
-                    Toast.makeText(MainActivity.this, "保存しました", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(MainActivity.this, R.string.saved_toast, Toast.LENGTH_SHORT).show();
                 }
                 if (finishAfterSave && ok) {
                     finish();

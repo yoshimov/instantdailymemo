@@ -63,7 +63,7 @@ public class SettingsActivity extends Activity {
         root.setBackgroundColor(Color.WHITE);
 
         TextView title = new TextView(this);
-        title.setText("保存先カレンダー");
+        title.setText(R.string.destination_calendar);
         title.setTextColor(Color.rgb(17, 24, 39));
         title.setTextSize(20);
         root.addView(title, new LinearLayout.LayoutParams(
@@ -71,7 +71,7 @@ public class SettingsActivity extends Activity {
                 LinearLayout.LayoutParams.WRAP_CONTENT));
 
         TextView note = new TextView(this);
-        note.setText("memo を保存する Google Calendar を選択してください");
+        note.setText(R.string.destination_calendar_note);
         note.setTextColor(Color.rgb(107, 114, 128));
         note.setTextSize(13);
         LinearLayout.LayoutParams noteParams = new LinearLayout.LayoutParams(
@@ -91,7 +91,7 @@ public class SettingsActivity extends Activity {
                 1f));
 
         Button closeButton = new Button(this);
-        closeButton.setText("閉じる");
+        closeButton.setText(R.string.close);
         closeButton.setOnClickListener(v -> finish());
         root.addView(closeButton, new LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
@@ -106,13 +106,13 @@ public class SettingsActivity extends Activity {
     private void loadCalendars() {
         listLayout.removeAllViews();
         if (!hasCalendarPermission()) {
-            addMessage("カレンダー権限がありません");
+            addMessage(getString(R.string.calendar_permission_missing));
             return;
         }
 
         List<CalendarChoice> choices = findCalendarChoices();
         if (choices.isEmpty()) {
-            addMessage("書き込み可能な Google Calendar が見つかりません");
+            addMessage(getString(R.string.writable_google_calendar_not_found));
             return;
         }
 
@@ -158,9 +158,10 @@ public class SettingsActivity extends Activity {
                 args,
                 sort)) {
             while (cursor != null && cursor.moveToNext()) {
+                String name = cursor.getString(1);
                 choices.add(new CalendarChoice(
                         cursor.getLong(0),
-                        cursor.getString(1),
+                        name == null ? getString(R.string.untitled_calendar) : name,
                         cursor.getString(2)));
             }
         }
@@ -183,7 +184,7 @@ public class SettingsActivity extends Activity {
         row.setPadding(0, dp(10), 0, dp(10));
         row.setOnClickListener(v -> {
             saveSelectedCalendar(choice.id);
-            Toast.makeText(this, "保存先を変更しました", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, R.string.destination_changed, Toast.LENGTH_SHORT).show();
             finish();
         });
         listLayout.addView(row, new LinearLayout.LayoutParams(
@@ -274,7 +275,7 @@ public class SettingsActivity extends Activity {
          */
         CalendarChoice(long id, String name, String account) {
             this.id = id;
-            this.name = name == null ? "名称なし" : name;
+            this.name = name;
             this.account = account == null ? "" : account;
         }
 

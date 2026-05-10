@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Instant Daily Memo</string>
+    <string name="calendar_permission_required">カレンダー権限が必要です</string>
+    <string name="calendar_permission_hint">権限を許可すると Google Calendar に保存できます</string>
+    <string name="settings">設定</string>
+    <string name="loading">読み込み中...</string>
+    <string name="today_diary_hint">今日の日記</string>
+    <string name="unsaved">未保存</string>
+    <string name="save">保存</string>
+    <string name="close">終了</string>
+    <string name="google_calendar_not_found">Google Calendar が見つかりません</string>
+    <string name="new_memo">新規メモ</string>
+    <string name="editing">編集中</string>
+    <string name="calendar_app_not_found">カレンダーアプリが見つかりません</string>
+    <string name="loaded">読み込み済み</string>
+    <string name="already_saved">保存済みです</string>
+    <string name="saving">保存中...</string>
+    <string name="saved">保存済み</string>
+    <string name="save_failed">保存に失敗しました</string>
+    <string name="saved_toast">保存しました</string>
+    <string name="destination_calendar">保存先カレンダー</string>
+    <string name="destination_calendar_note">memo を保存する Google Calendar を選択してください</string>
+    <string name="calendar_permission_missing">カレンダー権限がありません</string>
+    <string name="writable_google_calendar_not_found">書き込み可能な Google Calendar が見つかりません</string>
+    <string name="destination_changed">保存先を変更しました</string>
+    <string name="untitled_calendar">名称なし</string>
+</resources>
