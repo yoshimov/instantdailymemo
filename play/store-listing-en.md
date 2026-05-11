@@ -16,6 +16,8 @@ Features:
 - Saves to a Google Calendar event named `memo`
 - Loads an existing memo for today
 - Lets you choose the destination calendar
+- Adds text shared from other apps
+- Supports voice input
 - Includes save and close buttons
 - Opens the calendar app when you tap the date
 

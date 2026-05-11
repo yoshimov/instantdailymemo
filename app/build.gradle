@@ -18,7 +18,7 @@ android {
     compileSdk 35
 
     defaultConfig {
-        applicationId "info.yoshimov"
+        applicationId "info.yoshimov.instantdailymemo"
         minSdk 23
         targetSdk 35
         versionCode 1

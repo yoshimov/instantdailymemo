@@ -1,3 +1,5 @@
-Initial release.
+Version 0.1 release.
 
-Open the app, write quickly, and save the memo to a Google Calendar event named memo.
+- Write quickly and save to a Google Calendar event named memo.
+- Add text from other apps through Android share.
+- Insert memo text with voice input.

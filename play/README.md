@@ -10,9 +10,9 @@ app/build/outputs/bundle/release/app-release.aab
 
 ## Version
 
-- Application ID: `info.yoshimov`
+- Application ID: `info.yoshimov.instantdailymemo`
 - Version code: `1`
-- Version name: `1.0.0`
+- Version name: `0.1`
 - Target SDK: `35`
 - Min SDK: `23`
 
