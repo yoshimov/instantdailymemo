@@ -33,6 +33,8 @@ import android.content.Context;
 import android.widget.EditText;
 import android.widget.Button;
 import android.widget.FrameLayout;
+import android.widget.ImageButton;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -48,12 +50,14 @@ import java.util.TimeZone;
 
 public class MainActivity extends Activity {
     private static final int REQ_CALENDAR = 10;
+    private static final int REQ_SPEECH = 11;
     private static final String EVENT_TITLE = "memo";
     static final String PREFS_NAME = "instant_daily_memo";
     static final String KEY_CALENDAR_ID = "calendar_id";
 
     private EditText memoEdit;
     private TextView statusText;
+    private ImageButton voiceButton;
     private Button saveButton;
     private Button menuButton;
     private Button closeButton;
@@ -64,6 +68,7 @@ public class MainActivity extends Activity {
     private boolean loadingText;
     private boolean dirty;
     private boolean didInitialResume;
+    private String pendingSharedText;
     private final Handler handler = new Handler(Looper.getMainLooper());
     private final Runnable autosave = new Runnable() {
         @Override public void run() {
@@ -82,6 +87,7 @@ public class MainActivity extends Activity {
         getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
         showSystemBars();
         buildUi();
+        pendingSharedText = sharedTextFromIntent(getIntent());
 
         if (hasCalendarPermission()) {
             loadMemo();
@@ -91,6 +97,36 @@ public class MainActivity extends Activity {
                     Manifest.permission.READ_CALENDAR,
                     Manifest.permission.WRITE_CALENDAR
             }, REQ_CALENDAR);
+        }
+    }
+
+    /**
+     * Appends text sent from another app when this Activity is reused for a share target.
+     *
+     * @param intent incoming share intent.
+     */
+    @Override
+    protected void onNewIntent(Intent intent) {
+        super.onNewIntent(intent);
+        setIntent(intent);
+        queueSharedText(sharedTextFromIntent(intent));
+    }
+
+    /**
+     * Inserts speech recognition results into the memo.
+     *
+     * @param requestCode request identifier passed to {@link #startActivityForResult(Intent, int)}.
+     * @param resultCode result code returned by the recognizer.
+     * @param data recognizer result intent.
+     */
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode == REQ_SPEECH && resultCode == RESULT_OK && data != null) {
+            ArrayList<String> results = data.getStringArrayListExtra(android.speech.RecognizerIntent.EXTRA_RESULTS);
+            if (results != null && !results.isEmpty()) {
+                insertTextAtCursor(results.get(0));
+            }
         }
     }
 
@@ -160,6 +196,32 @@ public class MainActivity extends Activity {
         rootLayout.setOrientation(LinearLayout.VERTICAL);
         updateRootPadding(0);
         rootLayout.setBackgroundColor(Color.WHITE);
+
+        LinearLayout appHeader = new LinearLayout(this);
+        appHeader.setOrientation(LinearLayout.HORIZONTAL);
+        appHeader.setGravity(Gravity.CENTER_VERTICAL);
+
+        TextView appName = new TextView(this);
+        appName.setText(R.string.app_name);
+        appName.setTextColor(Color.rgb(17, 24, 39));
+        appName.setTextSize(16);
+        appHeader.addView(appName, new LinearLayout.LayoutParams(
+                0,
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+                1f));
+
+        TextView appVersion = new TextView(this);
+        appVersion.setText(R.string.app_version_display);
+        appVersion.setTextColor(Color.rgb(107, 114, 128));
+        appVersion.setTextSize(13);
+        appVersion.setGravity(Gravity.END);
+        appHeader.addView(appVersion, new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT));
+
+        rootLayout.addView(appHeader, new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT));
 
         LinearLayout header = new LinearLayout(this);
         header.setOrientation(LinearLayout.HORIZONTAL);
@@ -275,13 +337,26 @@ public class MainActivity extends Activity {
         buttons.setGravity(Gravity.END);
         buttons.setPadding(0, dp(8), 0, 0);
 
+        voiceButton = new ImageButton(this);
+        voiceButton.setImageResource(R.drawable.ic_mic_24);
+        voiceButton.setColorFilter(Color.rgb(17, 24, 39));
+        voiceButton.setScaleType(ImageView.ScaleType.CENTER);
+        voiceButton.setBackgroundColor(Color.TRANSPARENT);
+        voiceButton.setContentDescription(getString(R.string.voice_input));
+        voiceButton.setOnClickListener(v -> startSpeechInput());
+        buttons.addView(voiceButton, new LinearLayout.LayoutParams(
+                dp(56),
+                dp(48)));
+
         saveButton = new Button(this);
         saveButton.setText(R.string.save);
         saveButton.setOnClickListener(v -> saveMemo(true, false, true));
-        buttons.addView(saveButton, new LinearLayout.LayoutParams(
+        LinearLayout.LayoutParams saveParams = new LinearLayout.LayoutParams(
                 0,
                 dp(48),
-                1f));
+                1f);
+        saveParams.leftMargin = dp(12);
+        buttons.addView(saveButton, saveParams);
 
         closeButton = new Button(this);
         closeButton.setText(R.string.close);
@@ -381,8 +456,125 @@ public class MainActivity extends Activity {
                 memoEdit.post(MainActivity.this::updateScrollThumb);
                 dirty = false;
                 statusText.setText(record.status);
+                appendPendingSharedText();
             }
         }.execute();
+    }
+
+    /**
+     * Starts Android's built-in speech recognizer and returns the best result to this Activity.
+     */
+    private void startSpeechInput() {
+        Intent intent = new Intent(android.speech.RecognizerIntent.ACTION_RECOGNIZE_SPEECH);
+        intent.putExtra(android.speech.RecognizerIntent.EXTRA_LANGUAGE_MODEL,
+                android.speech.RecognizerIntent.LANGUAGE_MODEL_FREE_FORM);
+        intent.putExtra(android.speech.RecognizerIntent.EXTRA_PROMPT, getString(R.string.voice_input_prompt));
+        intent.putExtra(android.speech.RecognizerIntent.EXTRA_LANGUAGE, Locale.getDefault().toLanguageTag());
+        try {
+            startActivityForResult(intent, REQ_SPEECH);
+        } catch (ActivityNotFoundException e) {
+            Toast.makeText(this, R.string.speech_recognizer_not_found, Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    /**
+     * Extracts text shared to the app through Android's share sheet or text selection actions.
+     *
+     * @param intent incoming intent.
+     * @return shared text, or null when the intent does not contain usable text.
+     */
+    private String sharedTextFromIntent(Intent intent) {
+        if (intent == null || intent.getAction() == null) {
+            return null;
+        }
+
+        CharSequence text = null;
+        if (Intent.ACTION_SEND.equals(intent.getAction())) {
+            text = intent.getCharSequenceExtra(Intent.EXTRA_TEXT);
+        } else if (Intent.ACTION_PROCESS_TEXT.equals(intent.getAction())) {
+            text = intent.getCharSequenceExtra(Intent.EXTRA_PROCESS_TEXT);
+        }
+
+        if (text == null) {
+            return null;
+        }
+        String value = text.toString();
+        return value.trim().isEmpty() ? null : value;
+    }
+
+    /**
+     * Queues shared text until the memo is loaded, or appends immediately when possible.
+     *
+     * @param text text received from another app.
+     */
+    private void queueSharedText(String text) {
+        if (text == null) {
+            return;
+        }
+        if (memoEdit == null || loadingText) {
+            pendingSharedText = combinePendingText(pendingSharedText, text);
+            return;
+        }
+        appendSharedText(text);
+    }
+
+    /**
+     * Appends any shared text that arrived before the Calendar event was loaded.
+     */
+    private void appendPendingSharedText() {
+        if (pendingSharedText == null) {
+            return;
+        }
+        String text = pendingSharedText;
+        pendingSharedText = null;
+        appendSharedText(text);
+    }
+
+    /**
+     * Adds shared text to the end of the memo with a blank-line separator.
+     *
+     * @param text shared text to append.
+     */
+    private void appendSharedText(String text) {
+        Editable editable = memoEdit.getText();
+        int length = editable.length();
+        String separator = length == 0 ? "" : editable.toString().endsWith("\n") ? "\n" : "\n\n";
+        editable.insert(length, separator + text);
+        memoEdit.setSelection(memoEdit.getText().length());
+        dirty = true;
+        statusText.setText(R.string.shared_text_added);
+        handler.removeCallbacks(autosave);
+        handler.postDelayed(autosave, 900);
+        memoEdit.post(this::updateScrollThumb);
+    }
+
+    /**
+     * Inserts recognized speech at the current cursor position.
+     *
+     * @param text recognized speech text.
+     */
+    private void insertTextAtCursor(String text) {
+        if (text == null || text.trim().isEmpty()) {
+            return;
+        }
+        Editable editable = memoEdit.getText();
+        int start = Math.max(0, memoEdit.getSelectionStart());
+        int end = Math.max(0, memoEdit.getSelectionEnd());
+        int from = Math.min(start, end);
+        int to = Math.max(start, end);
+        editable.replace(from, to, text);
+        memoEdit.setSelection(from + text.length());
+    }
+
+    /**
+     * Combines multiple pending share payloads while preserving each item as a separate entry.
+     *
+     * @param current currently queued text.
+     * @param incoming newly received text.
+     * @return combined text.
+     */
+    private String combinePendingText(String current, String incoming) {
+        return current == null ? incoming : current + "\n\n" + incoming;
     }
 
     /**

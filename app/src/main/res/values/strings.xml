@@ -1,12 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">Instant Daily Memo</string>
+    <string name="app_version_display">v0.1</string>
     <string name="calendar_permission_required">Calendar permission is required</string>
     <string name="calendar_permission_hint">Allow calendar permission to save to Google Calendar</string>
     <string name="settings">Settings</string>
     <string name="loading">Loading...</string>
     <string name="today_diary_hint">Today\'s diary</string>
     <string name="unsaved">Unsaved</string>
+    <string name="voice_input">Voice</string>
+    <string name="voice_input_prompt">Speak memo text</string>
+    <string name="speech_recognizer_not_found">Speech input is not available</string>
+    <string name="shared_text_added">Shared text added</string>
     <string name="save">Save</string>
     <string name="close">Close</string>
     <string name="google_calendar_not_found">Google Calendar was not found</string>
